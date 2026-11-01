@@ -1,0 +1,45 @@
+/*!*********************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/Title/style.scss ***!
+  \*********************************************************************************************************************************************************************************************************************************************/
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+.wp-block-create-block-multi-block-title {
+  background-color: #00BEBE;
+  color: #fff;
+  padding: 2px;
+  font-family: arial;
+  font-size: 18pt;
+  text-align: right;
+  -webkit-margin-before: 0em !important;
+          margin-block-start: 0em !important;
+		   grid-area: info;
+}
+
+h1.wp-block-create-block-multi-block-title {
+  background-color: #00BEBE;
+  color: #fff;
+  padding: 2px;
+  font-family: arial;
+  font-size: 22pt;
+  text-align: center;
+  -webkit-margin-before: 0em !important;
+          margin-block-start: 0em !important;
+		   grid-area: title;
+}
+.Wrapper_Wp-block-multiblic-Title{
+	  grid-template-columns: 1fr;
+  grid-template-rows: min-content 1fr;
+  gap: 0px 0px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "info"
+    "title";
+	display: grid;
+	    grid-area: Title01;
+	
+}
+/*# sourceMappingURL=style-index.css.map*/

@@ -1,0 +1,29 @@
+/*!***********************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/version/style.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************/
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+ 
+.wp-block-create-block-multi-block-version {
+  background-color: #fff;
+  color: #0063ac;
+  padding: 2px;
+  font-family: arial;
+  font-size: 14pt;
+  text-align: right;
+  -webkit-margin-before: 0em !important;
+          margin-block-start: 0em !important;
+		  
+		  grid-area: other;
+}
+
+p.SpieClass {
+  font-family: arial !important;
+  font-size: 22pt !important;
+}
+
+/*# sourceMappingURL=style-index.css.map*/
