@@ -46,8 +46,17 @@ function create_block_multi_block_block_init()
     register_block_type(__DIR__ . '/build/arda_MQ');
     register_block_type(__DIR__ . '/build/Introduction');
     register_block_type(__DIR__ . '/build/Social');
-    flush_rewrite_rules();
 }
+
+// The rewrite rules of the Reports post type are rebuilt once after the plugin is installed or
+// updated (this file changes), after the post types are registered, instead of on every page load.
+add_action('init', function () {
+    $stamp = (string) filemtime(__FILE__);
+    if (get_option('ardareport_rewrite_stamp') !== $stamp) {
+        flush_rewrite_rules();
+        update_option('ardareport_rewrite_stamp', $stamp);
+    }
+}, 20);
 add_action('wp_print_footer_scripts', 'front_print_footer_scripts');
 
 
@@ -99,10 +108,15 @@ define( 'ARDAREPORT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define('ARDAREPORT_SQL', "SELECT * FROM $wpdb->postmeta WHERE meta_key = %s AND meta_value = %s AND post_id <> %d");
 function add_your_menu()
 {
-    add_menu_page(ARDAREPORT_MENU_LABEL, ARDAREPORT_MENU_LABEL, 'manage_options', ARDAREPORT_MENU_LABEL_slug, 'your_menu_function', 'dashicons-format-aside', 5);
+    add_menu_page(ARDAREPORT_MENU_LABEL, ARDAREPORT_MENU_LABEL, 'manage_options', ARDAREPORT_MENU_LABEL_slug, '__return_null', 'dashicons-format-aside', 5);
     // add_submenu_page() if you want subpages, but not necessary
 }
 add_action('admin_menu', 'add_your_menu');
+// The Reports menu has no page of its own: it opens the list of reports.
+add_action('load-toplevel_page_' . ARDAREPORT_MENU_LABEL_slug, function () {
+    wp_safe_redirect(admin_url('edit.php?post_type=' . sanitize_key(ARDAREPORT_POST_TYPE)));
+    exit;
+});
 // add Ardareport_type
 add_action('init', function () {
     $labels = array(
@@ -223,7 +237,8 @@ add_action('save_post', function ($post_id) {
     if (!isset($_POST[ARDACUSTOMER_ADDRESS_META_KEY])) return;
     if (!current_user_can('edit_post', $post_id)) return;
 
-    update_post_meta($post_id, ARDACUSTOMER_ADDRESS_META_KEY, $_POST[ARDACUSTOMER_ADDRESS_META_KEY]);
+    // Shown as HTML in the reports: keep only the HTML allowed in a post, no scripts.
+    update_post_meta($post_id, ARDACUSTOMER_ADDRESS_META_KEY, wp_kses_post(wp_unslash($_POST[ARDACUSTOMER_ADDRESS_META_KEY])));
 });
 // add the custom field for Ardareport_type
 add_action('add_meta_boxes', function () {
@@ -298,7 +313,8 @@ add_action('add_meta_boxes', function () {
             $query->the_post(); 
             $post_id = get_the_ID();
             $post_title = get_the_title();
-            echo '<option value="' . $post_id . '" ' .  selected($value, $post_id) . '>' . $post_title .'</option>';
+            // selected() prints its result unless its third argument is false.
+            echo '<option value="' . esc_attr($post_id) . '" ' .  selected($value, $post_id, false) . '>' . esc_html($post_title) .'</option>';
         }
 
         echo ' </select><br/>';
@@ -320,7 +336,7 @@ add_action('add_meta_boxes', function () {
             return sprintf('%s="%s"', $key, esc_attr($attributes[$key]));
         }, array_keys($attributes)));
 
-        echo '<label for=' . ARDAREPORT_CONTEXT_META_KEY . '>' . ARDAREPORT_CONTEXT_META_LABEL . '</label><textarea ' . $attributes . ' >' . get_post_meta($post->ID, ARDAREPORT_CONTEXT_META_KEY, true) . '</textarea><br/>';
+        echo '<label for=' . ARDAREPORT_CONTEXT_META_KEY . '>' . ARDAREPORT_CONTEXT_META_LABEL . '</label><textarea ' . $attributes . ' >' . esc_textarea(get_post_meta($post->ID, ARDAREPORT_CONTEXT_META_KEY, true)) . '</textarea><br/>';
     }, ARDAREPORT_POST_TYPE, 'advanced', 'core');
 });
 
@@ -345,7 +361,8 @@ add_action('save_post', function ($post_id) {
     
     update_post_meta($post_id, ARDAREPORT_Client_META_KEY, sanitize_text_field($_POST[ARDAREPORT_Client_META_KEY]));
     update_post_meta($post_id, ARDAREPORT_Title_META_KEY, sanitize_text_field($_POST[ARDAREPORT_Title_META_KEY]));
-    update_post_meta($post_id, ARDAREPORT_CONTEXT_META_KEY, sanitize_text_field($_POST[ARDAREPORT_CONTEXT_META_KEY])); 
+    // A textarea: keep its line breaks.
+    update_post_meta($post_id, ARDAREPORT_CONTEXT_META_KEY, sanitize_textarea_field(wp_unslash($_POST[ARDAREPORT_CONTEXT_META_KEY])));
     
     If( isset($_POST[ARDAREPORT_Historical_META_KEY]) ){
         update_post_meta($post_id, ARDAREPORT_Historical_META_KEY, true );
@@ -420,7 +437,8 @@ function front_print_footer_scripts()
     $valcc = "";
 
     foreach (array_keys($_COOKIE) as &$value) {
-        if (str_starts_with($value, 'wordpress_logged_in_')) {
+        // strpos rather than str_starts_with, which needs PHP 8.
+        if (strpos($value, 'wordpress_logged_in_') === 0) {
             $keycc = $value;
             $valcc =  $_COOKIE[$value];
         }

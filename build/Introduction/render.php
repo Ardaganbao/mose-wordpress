@@ -14,6 +14,8 @@ $report_address = "";
 $report_author = $post->post_author;
 $report_date =  get_the_date('d F Y');
 
+// Defined once: a page with two Introduction blocks runs this file twice.
+if (!function_exists('get_revisionList')) {
 function get_revisionList($post_wp)
 {
 	$output = '';
@@ -39,13 +41,14 @@ function get_revisionList($post_wp)
 	// At the end of your shortcode function, make sure to..
 	return $output;
 }
+}
 
 ?>
 <div <?php echo get_block_wrapper_attributes(); ?>>
 
 	<h2>Introduction</h2>
 	<h3>Context</h3>
-	<p><?php echo $report_Context; ?></p>
+	<p><?php echo nl2br(esc_html($report_Context)); ?></p>
 	<h3>Author</h3>
 	<ul>
 		<li>Author: <?php echo  get_the_author_meta('display_name', $report_author); ?></li>
@@ -72,7 +75,8 @@ function get_revisionList($post_wp)
 
 
 		<p>Address:<br />
-			<?php echo $report_address; ?>
+			<?php echo wp_kses_post($report_address); ?>
+		</p>
 		<?php
 	}
 		?>

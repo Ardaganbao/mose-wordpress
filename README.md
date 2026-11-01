@@ -11,7 +11,7 @@ WordPress side of [MOSE](https://github.com/Ardaganbao/Mose): the **WP Arda-Repo
 1. Download `multi-block.zip` from the [latest release](https://github.com/Ardaganbao/mose-wordpress/releases/latest).
 2. In WordPress: **Plugins → Add New → Upload Plugin**, choose the zip, install and activate. On a site that already has the plugin, WordPress offers to replace it: accept.
 
-The site needs PHP 8.0 or later.
+The site needs WordPress 6.1 and PHP 7.0 or later.
 
 ## Updates
 
