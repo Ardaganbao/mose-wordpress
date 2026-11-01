@@ -1,0 +1,40 @@
+# A tag v1.2.3 publishes the release 1.2.3 with multi-block.zip, which the WordPress sites
+# install as an update. A tag with a suffix (v1.2.3-rc.1) is a pre-release: the sites ignore it.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches the plugin version
+        run: |
+          version=$(grep -m1 -E '^\s*\*\s*Version:' multi-block.php | sed -E 's/.*Version:\s*//' | tr -d '\r ')
+          if [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match 'Version: $version' in multi-block.php"
+            exit 1
+          fi
+
+      # The zip holds a multi-block folder, the plugin's folder on the sites, so they update in place.
+      - name: Build multi-block.zip
+        run: |
+          mkdir -p dist/multi-block
+          rsync -a --exclude '.git*' --exclude '.github' --exclude 'dist' --exclude 'src' \
+            --exclude 'node_modules' --exclude 'package.json' --exclude 'package-lock.json' ./ dist/multi-block/
+          cd dist && zip -qr multi-block.zip multi-block
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/multi-block.zip --title "$GITHUB_REF_NAME" --generate-notes $prerelease

@@ -12,6 +12,7 @@
  * License:     GPL 3.0
  * License URI: http://www.gnu.org/licenses/gpl-3.0.txt
  * Text Domain:       multi-block
+ * Update URI:        https://github.com/Ardaganbao/mose-wordpress
  *
  * @package           create-block
  */
@@ -26,6 +27,16 @@
 if (!defined('WPINC')) {
     die;
 }
+
+// Updates from GitHub: each release of Ardaganbao/mose-wordpress (not a pre-release) with its
+// multi-block.zip shows as an update on the Plugins page. The version is the Version above.
+require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
+$ardareport_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    'https://github.com/Ardaganbao/mose-wordpress/',
+    __FILE__,
+    'multi-block'
+);
+$ardareport_update_checker->getVcsApi()->enableReleaseAssets('/multi-block\.zip($|[?&#])/i');
 
 function create_block_multi_block_block_init()
 {
