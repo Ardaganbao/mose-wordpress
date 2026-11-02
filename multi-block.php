@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1.0-rc.2
+ * Version:           1.1.0-rc.3
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
@@ -433,13 +433,20 @@ add_action('wp_enqueue_scripts', function () {
     if (!is_singular($post_type) && !is_post_type_archive($post_type)) {
         return;
     }
-    wp_enqueue_style('ardareport-fonts', 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Fira+Sans:wght@400;700&display=swap', array(), null);
-    wp_enqueue_style('ardareport-report', ARDAREPORT_PLUGIN_URL . 'report.css', array('ardareport-fonts'), (string) filemtime(__DIR__ . '/report.css'));
+    wp_register_style('ardareport-fonts', 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Fira+Sans:wght@400;700&display=swap', array(), null);
+    wp_register_style('ardareport-report', ARDAREPORT_PLUGIN_URL . 'report.css', array('ardareport-fonts'), (string) filemtime(__DIR__ . '/report.css'));
     $image = get_option('ardareport_header_image');
     if ($image) {
         wp_add_inline_style('ardareport-report', ':root{--ardareport-header-image:url("' . esc_url_raw($image) . '");}');
     }
 });
+// Printed at the end of <head>, where the site's custom CSS used to be: after the theme and the
+// other plugins, so that the report style wins over them as it did then.
+add_action('wp_head', function () {
+    if (wp_style_is('ardareport-report', 'registered')) {
+        wp_print_styles('ardareport-report');
+    }
+}, 999);
 
 // Settings > General > Report header image: the cover image behind the report header, per site.
 add_action('admin_init', function () {
