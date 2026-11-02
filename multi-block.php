@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.0.0
+ * Version:           1.1.0-rc.1
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
