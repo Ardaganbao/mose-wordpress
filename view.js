@@ -11,22 +11,22 @@
 (function () {
 	'use strict';
 
-	// Colors. Capacity: used is a recessive neutral, free the report teal; free turns to the
-	// status colors when low, always with its value and a warning sign written beside it.
+	// Colors. Capacity: used is the report teal, free a recessive neutral; used turns to the
+	// status colors when high, always with its value and a warning sign written beside it.
 	var INK = '#0b0b0b';
 	var INK_SECONDARY = '#52514e';
 	var GRID = '#e1e0d9';
 	var AXIS = '#c3c2b7';
 	var SURFACE = '#ffffff';
-	var USED = '#dde4e7';
-	var FREE = '#00a3a3';
+	var USED = '#00a3a3';
+	var FREE = '#dde4e7';
 	var STATUS = { good: '#0ca30c', warning: '#fab219', serious: '#ec835a', critical: '#d03b3b', neutral: '#898781' };
 	// Series of the other graphs, in this fixed order; past eight, a series is drawn in gray.
 	var SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
 	var EXTRA_SERIES = '#c3c2b7';
 
-	var FREE_WARNING = 25;
-	var FREE_CRITICAL = 15;
+	var USED_WARNING = 75;
+	var USED_CRITICAL = 85;
 	var WIDTH = 650;
 	var FONT = '"Segoe UI", Helvetica, Arial, sans-serif';
 	var GRAPH_TYPES = ['Volbarstacked', 'NasVolume', 'CommVaultJob', 'plotly', 'plotlybarstacked', 'Multiline', 'StorageEvolution', 'warningPie', 'Ardagram'];
@@ -92,14 +92,14 @@
 		return text.length > length ? text.slice(0, length - 1) + '…' : text;
 	}
 
-	function freeColor(percent) {
-		if (percent < FREE_CRITICAL) {
+	function usedColor(percent) {
+		if (percent > USED_CRITICAL) {
 			return STATUS.critical;
 		}
-		if (percent < FREE_WARNING) {
+		if (percent > USED_WARNING) {
 			return STATUS.warning;
 		}
-		return FREE;
+		return USED;
 	}
 
 	// Commvault job statuses keep their meaning whatever their order in the table.
@@ -169,17 +169,18 @@
 	}
 
 	// Capacity: one horizontal bar per volume, disk or datastore, used then free, in %, with the
-	// free part written at the end of the bar.
+	// used part written at the end of the bar. items: [{ name, used (%), sizes (text, optional) }].
 	function capacityChart(items, title) {
-		var height = 64 + items.length * 30;
-		var anyLow = items.some(function (item) { return item.free < FREE_WARNING; });
+		// The title, the legend and the % axis take about 110 px, whatever the number of bars.
+		var height = 112 + items.length * 30;
+		var anyHigh = items.some(function (item) { return item.used > USED_WARNING; });
 		var legendItems = [
 			{ text: 'Used', fillStyle: USED, strokeStyle: USED, lineWidth: 0 },
 			{ text: 'Free', fillStyle: FREE, strokeStyle: FREE, lineWidth: 0 }
 		];
-		if (anyLow) {
-			legendItems.push({ text: 'Free under ' + FREE_WARNING + ' %', fillStyle: STATUS.warning, strokeStyle: STATUS.warning, lineWidth: 0 });
-			legendItems.push({ text: 'Free under ' + FREE_CRITICAL + ' %', fillStyle: STATUS.critical, strokeStyle: STATUS.critical, lineWidth: 0 });
+		if (anyHigh) {
+			legendItems.push({ text: 'Used over ' + USED_WARNING + ' %', fillStyle: STATUS.warning, strokeStyle: STATUS.warning, lineWidth: 0 });
+			legendItems.push({ text: 'Used over ' + USED_CRITICAL + ' %', fillStyle: STATUS.critical, strokeStyle: STATUS.critical, lineWidth: 0 });
 		}
 
 		var options = baseOptions(title);
@@ -194,7 +195,7 @@
 		options.plugins.tooltip.callbacks = {
 			label: function (context) {
 				var item = items[context.dataIndex];
-				return context.dataset.label + ': ' + formatPercent(context.parsed.x) + (item.sizes && context.datasetIndex === 1 ? ' (' + item.sizes + ')' : '');
+				return context.dataset.label + ': ' + formatPercent(context.parsed.x) + (item.sizes && context.datasetIndex === 0 ? ' (' + item.sizes + ')' : '');
 			}
 		};
 
@@ -205,23 +206,23 @@
 				data: {
 					labels: items.map(function (item) { return shorten(item.name, 36); }),
 					datasets: [
-						{ label: 'Used', data: items.map(function (item) { return 100 - item.free; }), backgroundColor: USED, borderColor: SURFACE, borderWidth: { right: 2 }, borderSkipped: false, barThickness: 16 },
-						{ label: 'Free', data: items.map(function (item) { return item.free; }), backgroundColor: items.map(function (item) { return freeColor(item.free); }), barThickness: 16 }
+						{ label: 'Used', data: items.map(function (item) { return item.used; }), backgroundColor: items.map(function (item) { return usedColor(item.used); }), borderColor: SURFACE, borderWidth: { right: 2 }, borderSkipped: false, barThickness: 16 },
+						{ label: 'Free', data: items.map(function (item) { return 100 - item.used; }), backgroundColor: FREE, barThickness: 16 }
 					]
 				},
 				options: options,
 				plugins: [{
-					id: 'freeLabels',
+					id: 'usedLabels',
 					afterDatasetsDraw: function (chart) {
-						var meta = chart.getDatasetMeta(1);
+						var meta = chart.getDatasetMeta(0);
 						drawLabels(chart, items.map(function (item, index) {
-							var low = item.free < FREE_WARNING;
+							var high = item.used > USED_WARNING;
 							return {
 								x: chart.chartArea.right + 8,
 								y: meta.data[index].y,
-								text: (low ? '⚠ ' : '') + formatPercent(item.free) + ' free' + (item.sizes ? ' · ' + item.sizes : ''),
-								color: low ? INK : INK_SECONDARY,
-								bold: low
+								text: (high ? '⚠ ' : '') + formatPercent(item.used) + ' used' + (item.sizes ? ' · ' + item.sizes : ''),
+								color: high ? INK : INK_SECONDARY,
+								bold: high
 							};
 						}));
 					}
@@ -429,26 +430,26 @@
 				var used = toNumber(row.cells[1]) || 0;
 				var total = free + used;
 				if (total > 0) {
-					volumes.push({ name: row.name, free: free * 100 / total, sizes: formatSize(free) + ' of ' + formatSize(total) });
+					volumes.push({ name: row.name, used: used * 100 / total, sizes: formatSize(used) + ' of ' + formatSize(total) });
 				}
 			});
 			return volumes.length ? capacityChart(volumes, 'Volume capacity') : null;
 		}
 		if (type === 'Volbarstacked' && table.rows.length === 1) {
-			// One row of free %, one column per datastore, volume or disk.
+			// One row of free %, one column per datastore, volume or disk (as the modules write it).
 			var row = table.rows[0];
 			var items = [];
 			table.labels.forEach(function (label, column) {
 				var free = toNumber(row.cells[column]);
 				if (free !== null && free >= 0 && free <= 100) {
-					items.push({ name: label, free: free });
+					items.push({ name: label, used: 100 - free });
 				}
 			});
 			if (items.length === 0) {
 				return null;
 			}
 			var date = /\d/.test(row.name) ? ' – ' + row.name : '';
-			return capacityChart(items, 'Free space' + date);
+			return capacityChart(items, 'Used space' + date);
 		}
 		if (type === 'CommVaultJob') {
 			return stackedChart(table, jobStatusColor);
