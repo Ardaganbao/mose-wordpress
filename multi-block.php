@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1.0-rc.1
+ * Version:           1.1.0-rc.2
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
@@ -425,6 +425,30 @@ function my_admin_scripts()
     wp_register_script('ViewwJS', plugin_dir_url(__FILE__) . 'view.js');
     wp_enqueue_script('ViewwJS');
 }
+
+// The report style (screen and A4 print) and its fonts: on the Report pages and their archive
+// only, not on the rest of the site.
+add_action('wp_enqueue_scripts', function () {
+    $post_type = sanitize_key(ARDAREPORT_POST_TYPE);
+    if (!is_singular($post_type) && !is_post_type_archive($post_type)) {
+        return;
+    }
+    wp_enqueue_style('ardareport-fonts', 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Fira+Sans:wght@400;700&display=swap', array(), null);
+    wp_enqueue_style('ardareport-report', ARDAREPORT_PLUGIN_URL . 'report.css', array('ardareport-fonts'), (string) filemtime(__DIR__ . '/report.css'));
+    $image = get_option('ardareport_header_image');
+    if ($image) {
+        wp_add_inline_style('ardareport-report', ':root{--ardareport-header-image:url("' . esc_url_raw($image) . '");}');
+    }
+});
+
+// Settings > General > Report header image: the cover image behind the report header, per site.
+add_action('admin_init', function () {
+    register_setting('general', 'ardareport_header_image', array('type' => 'string', 'sanitize_callback' => 'esc_url_raw', 'default' => ''));
+    add_settings_field('ardareport_header_image', 'Report header image', function () {
+        printf('<input type="url" id="ardareport_header_image" name="ardareport_header_image" class="regular-text code" value="%s" />', esc_attr(get_option('ardareport_header_image')));
+        echo '<p class="description">URL of the image behind the header of the reports, e.g. copied from the Media Library.</p>';
+    }, 'general', 'default', array('label_for' => 'ardareport_header_image'));
+});
 //
 /**
  * Print Javascript plaintext in page footer.

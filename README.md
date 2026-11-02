@@ -31,6 +31,14 @@ A site with a version from before the updater (1.0.0) must install the zip once 
 
 The [Release workflow](.github/workflows/release.yml) checks that the tag matches the version, builds `multi-block.zip` and publishes the release. A tag with a suffix, like `v1.2.0-rc.1`, is a pre-release: the sites ignore it, so it can be tested by installing its zip by hand.
 
+## Report style
+
+`report.css` styles the reports on screen and for A4 print: numbered headings, tables, code blocks, the cover header, page breaks. It is loaded with the fonts Source Code Pro and Fira Sans on the Report pages and the Reports archive only, so the rest of the site keeps its theme.
+
+The image behind the cover header is set per site in **Settings → General → Report header image** (a URL, e.g. copied from the Media Library).
+
+A site that had this style in **Appearance → Customize → Additional CSS** can remove it from there once the plugin is updated: the plugin now brings it.
+
 ## Development
 
 The blocks are in `src/<Block>/` (`block.json`, `edit.js`, `save.js`, `render.php`, styles) and compile to `build/`, which is what the sites run. Needs Node.js 22 or later.
