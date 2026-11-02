@@ -69,11 +69,14 @@ A graph is a ``` block whose name is the graph type, with a Markdown table insid
 
 | Block | Drawn as |
 |---|---|
-| `Volbarstacked`, one data row | Used / Free stacked bars; Free is orange under 25 %, dark orange under 15 % |
-| `Volbarstacked`, `CommVaultJob`, `plotlybarstacked`, several rows | Stacked bars, one dataset per row |
-| `NasVolume`, `warningPie` | Pie of the first data row |
-| `Multiline`, `StorageEvolution` | Lines, one per row |
-| `plotly` | Bars |
+| `Volbarstacked`, one data row of free % | Used / free bar per column, used in teal, orange over 75 % and red over 85 %, with the used % written |
+| `NasVolume` (rows: name, free, used) | Used / free bar per row, with the used % and size written |
+| `SLA` (rows: name, met, missed) | Met / missed bar per row, met in green, missed in red, with the counts written |
+| `CommVaultJob` | Stacked bars per column in the job status colors, with the total written above |
+| `Volbarstacked`, `plotlybarstacked`, several rows | Stacked bars, one dataset per row, with the total written above |
+| `Multiline`, `StorageEvolution` | Lines, one per row, with the last value written |
+| `warningPie` | Doughnut of OK / warning / critical |
+| `plotly` | Bars, with the values written |
 
 ## Known issues
 

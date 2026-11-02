@@ -24,12 +24,16 @@
 	// Series of the other graphs, in this fixed order; past eight, a series is drawn in gray.
 	var SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
 	var EXTRA_SERIES = '#c3c2b7';
+	// SLA: green and red, a lighter green and a darker red so that they stay apart for
+	// red-green colorblind readers; the counts are always written beside the bar.
+	var SLA_MET = '#4cc24c';
+	var SLA_MISSED = '#b52a2a';
 
 	var USED_WARNING = 75;
 	var USED_CRITICAL = 85;
 	var WIDTH = 650;
 	var FONT = '"Segoe UI", Helvetica, Arial, sans-serif';
-	var GRAPH_TYPES = ['Volbarstacked', 'NasVolume', 'CommVaultJob', 'plotly', 'plotlybarstacked', 'Multiline', 'StorageEvolution', 'warningPie', 'Ardagram'];
+	var GRAPH_TYPES = ['Volbarstacked', 'NasVolume', 'CommVaultJob', 'SLA', 'plotly', 'plotlybarstacked', 'Multiline', 'StorageEvolution', 'warningPie', 'Ardagram'];
 
 	var chartCount = 0;
 
@@ -223,6 +227,59 @@
 								text: (high ? '⚠ ' : '') + formatPercent(item.used) + ' used' + (item.sizes ? ' · ' + item.sizes : ''),
 								color: high ? INK : INK_SECONDARY,
 								bold: high
+							};
+						}));
+					}
+				}]
+			}
+		};
+	}
+
+	// SLA: one horizontal bar per row, met then missed, in % of the items, with the counts written
+	// at the end of the bar. rows: [{ name, met, missed }].
+	function slaChart(rows, title) {
+		var options = baseOptions(title);
+		options.indexAxis = 'y';
+		options.layout.padding.right = 170;
+		options.scales = {
+			x: axis({ stacked: true, min: 0, max: 100, ticks: { color: INK_SECONDARY, font: { family: FONT, size: 12 }, padding: 6, stepSize: 25, callback: function (value) { return value + ' %'; } } }),
+			y: axis({ stacked: true, grid: { display: false }, border: { color: AXIS } })
+		};
+		options.plugins.tooltip.callbacks = {
+			label: function (context) {
+				var row = rows[context.dataIndex];
+				var count = context.datasetIndex === 0 ? row.met : row.missed;
+				return context.dataset.label + ': ' + count + ' (' + formatPercent(context.parsed.x) + ')';
+			}
+		};
+		function percent(count, row) {
+			return count * 100 / (row.met + row.missed);
+		}
+
+		return {
+			// The title, the legend and the % axis take about 110 px, whatever the number of bars.
+			height: 112 + rows.length * 30,
+			config: {
+				type: 'bar',
+				data: {
+					labels: rows.map(function (row) { return shorten(row.name, 36); }),
+					datasets: [
+						{ label: 'Met', data: rows.map(function (row) { return percent(row.met, row); }), backgroundColor: SLA_MET, borderColor: SURFACE, borderWidth: { right: 2 }, borderSkipped: false, barThickness: 16 },
+						{ label: 'Missed', data: rows.map(function (row) { return percent(row.missed, row); }), backgroundColor: SLA_MISSED, barThickness: 16 }
+					]
+				},
+				options: options,
+				plugins: [{
+					id: 'slaCounts',
+					afterDatasetsDraw: function (chart) {
+						var meta = chart.getDatasetMeta(0);
+						drawLabels(chart, rows.map(function (row, index) {
+							return {
+								x: chart.chartArea.right + 8,
+								y: meta.data[index].y,
+								text: row.missed ? '✓ ' + row.met + ' met · ✗ ' + row.missed + ' missed' : '✓ all ' + row.met + ' met',
+								color: row.missed ? INK : INK_SECONDARY,
+								bold: row.missed > 0
 							};
 						}));
 					}
@@ -453,6 +510,18 @@
 		}
 		if (type === 'CommVaultJob') {
 			return stackedChart(table, jobStatusColor);
+		}
+		if (type === 'SLA') {
+			// Rows: name, items that met the SLA, items that missed it.
+			var slaRows = [];
+			table.rows.forEach(function (slaRow) {
+				var met = toNumber(slaRow.cells[0]) || 0;
+				var missed = toNumber(slaRow.cells[1]) || 0;
+				if (met + missed > 0) {
+					slaRows.push({ name: slaRow.name, met: met, missed: missed });
+				}
+			});
+			return slaRows.length ? slaChart(slaRows, table.title) : null;
 		}
 		if (type === 'Volbarstacked' || type === 'plotlybarstacked') {
 			return stackedChart(table, function (name, index) { return seriesColor(index); });
