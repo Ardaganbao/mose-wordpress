@@ -235,9 +235,11 @@
 		};
 	}
 
-	// SLA: one horizontal bar per row, met then missed, in % of the items, with the counts written
-	// at the end of the bar. rows: [{ name, met, missed }].
-	function slaChart(rows, title) {
+	// Two parts of a whole, good then bad (SLA met / missed, or the two columns of a NasVolume
+	// block that is not free / used space): one horizontal bar per row, in %, the good part green
+	// and the bad part red, the legend named after the columns, and the values written at the end
+	// of the bar. rows: [{ name, good, bad }]; describe(row) is that text, emphasize(row) puts it in bold.
+	function twoPartChart(rows, title, names, describe, emphasize) {
 		var options = baseOptions(title);
 		options.indexAxis = 'y';
 		options.layout.padding.right = 170;
@@ -248,12 +250,12 @@
 		options.plugins.tooltip.callbacks = {
 			label: function (context) {
 				var row = rows[context.dataIndex];
-				var count = context.datasetIndex === 0 ? row.met : row.missed;
+				var count = context.datasetIndex === 0 ? row.good : row.bad;
 				return context.dataset.label + ': ' + count + ' (' + formatPercent(context.parsed.x) + ')';
 			}
 		};
 		function percent(count, row) {
-			return count * 100 / (row.met + row.missed);
+			return count * 100 / (row.good + row.bad);
 		}
 
 		return {
@@ -264,28 +266,42 @@
 				data: {
 					labels: rows.map(function (row) { return shorten(row.name, 36); }),
 					datasets: [
-						{ label: 'Met', data: rows.map(function (row) { return percent(row.met, row); }), backgroundColor: SLA_MET, borderColor: SURFACE, borderWidth: { right: 2 }, borderSkipped: false, barThickness: 16 },
-						{ label: 'Missed', data: rows.map(function (row) { return percent(row.missed, row); }), backgroundColor: SLA_MISSED, barThickness: 16 }
+						{ label: names[0], data: rows.map(function (row) { return percent(row.good, row); }), backgroundColor: SLA_MET, borderColor: SURFACE, borderWidth: { right: 2 }, borderSkipped: false, barThickness: 16 },
+						{ label: names[1], data: rows.map(function (row) { return percent(row.bad, row); }), backgroundColor: SLA_MISSED, barThickness: 16 }
 					]
 				},
 				options: options,
 				plugins: [{
-					id: 'slaCounts',
+					id: 'twoPartValues',
 					afterDatasetsDraw: function (chart) {
 						var meta = chart.getDatasetMeta(0);
 						drawLabels(chart, rows.map(function (row, index) {
+							var bold = emphasize(row);
 							return {
 								x: chart.chartArea.right + 8,
 								y: meta.data[index].y,
-								text: row.missed ? '✓ ' + row.met + ' met · ✗ ' + row.missed + ' missed' : '✓ all ' + row.met + ' met',
-								color: row.missed ? INK : INK_SECONDARY,
-								bold: row.missed > 0
+								text: describe(row),
+								color: bold ? INK : INK_SECONDARY,
+								bold: bold
 							};
 						}));
 					}
 				}]
 			}
 		};
+	}
+
+	// The rows of a two-column table: { name, good, bad } with the values as written in the table.
+	function twoPartRows(table) {
+		var rows = [];
+		table.rows.forEach(function (row) {
+			var good = toNumber(row.cells[0]) || 0;
+			var bad = toNumber(row.cells[1]) || 0;
+			if (good + bad > 0) {
+				rows.push({ name: row.name, good: good, bad: bad, goodText: row.cells[0], badText: row.cells[1] });
+			}
+		});
+		return rows;
 	}
 
 	// Stacked bars, one per column, a dataset per row, with the total written above each bar.
@@ -480,17 +496,27 @@
 		}
 
 		if (type === 'NasVolume') {
-			// Rows: volume, free, used.
-			var volumes = [];
-			table.rows.forEach(function (row) {
-				var free = toNumber(row.cells[0]) || 0;
-				var used = toNumber(row.cells[1]) || 0;
-				var total = free + used;
-				if (total > 0) {
-					volumes.push({ name: row.name, used: used * 100 / total, sizes: formatSize(used) + ' of ' + formatSize(total) });
-				}
-			});
-			return volumes.length ? capacityChart(volumes, 'Volume capacity') : null;
+			// The header is the title then the names of the two columns, which name the legend.
+			var first = table.labels[0] || 'Free';
+			var second = table.labels[1] || 'Used';
+			if (/free/i.test(first) && /used/i.test(second)) {
+				// Free and used space (the NAS module): the used part is highlighted.
+				var volumes = [];
+				table.rows.forEach(function (row) {
+					var free = toNumber(row.cells[0]) || 0;
+					var used = toNumber(row.cells[1]) || 0;
+					var total = free + used;
+					if (total > 0) {
+						volumes.push({ name: row.name, used: used * 100 / total, sizes: formatSize(used) + ' of ' + formatSize(total) });
+					}
+				});
+				return volumes.length ? capacityChart(volumes, table.title || 'Volume capacity') : null;
+			}
+			// Any other two values (an SLA met / missed...): the first good in green, the second bad in red.
+			var pairs = twoPartRows(table);
+			return pairs.length ? twoPartChart(pairs, table.title, [first, second], function (row) {
+				return row.goodText + ' ' + first + ' · ' + row.badText + ' ' + second;
+			}, function () { return false; }) : null;
 		}
 		if (type === 'Volbarstacked' && table.rows.length === 1) {
 			// One row of free %, one column per datastore, volume or disk (as the modules write it).
@@ -505,23 +531,20 @@
 			if (items.length === 0) {
 				return null;
 			}
+			// The modules write "Disk %" or "Disk (%)" as title; any other title is the block's own.
 			var date = /\d/.test(row.name) ? ' – ' + row.name : '';
-			return capacityChart(items, 'Used space' + date);
+			var spaceTitle = /^disk\s*\(?%\)?$/i.test(table.title) || !table.title ? 'Used space' : table.title;
+			return capacityChart(items, spaceTitle + date);
 		}
 		if (type === 'CommVaultJob') {
 			return stackedChart(table, jobStatusColor);
 		}
 		if (type === 'SLA') {
 			// Rows: name, items that met the SLA, items that missed it.
-			var slaRows = [];
-			table.rows.forEach(function (slaRow) {
-				var met = toNumber(slaRow.cells[0]) || 0;
-				var missed = toNumber(slaRow.cells[1]) || 0;
-				if (met + missed > 0) {
-					slaRows.push({ name: slaRow.name, met: met, missed: missed });
-				}
-			});
-			return slaRows.length ? slaChart(slaRows, table.title) : null;
+			var slaRows = twoPartRows(table);
+			return slaRows.length ? twoPartChart(slaRows, table.title, ['Met', 'Missed'], function (row) {
+				return row.bad ? '✓ ' + row.goodText + ' met · ✗ ' + row.badText + ' missed' : '✓ all ' + row.goodText + ' met';
+			}, function (row) { return row.bad > 0; }) : null;
 		}
 		if (type === 'Volbarstacked' || type === 'plotlybarstacked') {
 			return stackedChart(table, function (name, index) { return seriesColor(index); });
