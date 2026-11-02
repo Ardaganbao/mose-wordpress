@@ -414,23 +414,29 @@ function default_post_visibility()
 add_action('post_submitbox_misc_actions', 'default_post_visibility');
 
 
-add_action('wp_enqueue_scripts', 'my_admin_scripts');
-
-function my_admin_scripts()
+// The Report pages and their archive: the report style and graphs are loaded there only, not on
+// the rest of the site.
+function ardareport_is_report_page()
 {
-    wp_register_script('jQuery', 'https://code.jquery.com/jquery-3.7.0.min.js');
-    wp_enqueue_script('jQuery');
-    wp_register_script('BootstrapChart', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js');
-    wp_enqueue_script('BootstrapChart');
-    wp_register_script('ViewwJS', plugin_dir_url(__FILE__) . 'view.js');
-    wp_enqueue_script('ViewwJS');
+    $post_type = sanitize_key(ARDAREPORT_POST_TYPE);
+    return is_singular($post_type) || is_post_type_archive($post_type);
 }
 
-// The report style (screen and A4 print) and its fonts: on the Report pages and their archive
-// only, not on the rest of the site.
+add_action('wp_enqueue_scripts', 'my_admin_scripts');
+
+// The graphs of the reports: Chart.js 4 and view.js, which draws the ``` graph blocks.
+function my_admin_scripts()
+{
+    if (!ardareport_is_report_page()) {
+        return;
+    }
+    wp_enqueue_script('ardareport-chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js', array(), null, true);
+    wp_enqueue_script('ardareport-graphs', ARDAREPORT_PLUGIN_URL . 'view.js', array('ardareport-chartjs'), (string) filemtime(__DIR__ . '/view.js'), true);
+}
+
+// The report style (screen and A4 print) and its fonts.
 add_action('wp_enqueue_scripts', function () {
-    $post_type = sanitize_key(ARDAREPORT_POST_TYPE);
-    if (!is_singular($post_type) && !is_post_type_archive($post_type)) {
+    if (!ardareport_is_report_page()) {
         return;
     }
     wp_register_style('ardareport-fonts', 'https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&family=Fira+Sans:wght@400;700&display=swap', array(), null);
@@ -488,80 +494,7 @@ function front_print_footer_scripts()
         }
 
 
-    $script = $script . '
-			 			  
-			<script id="module-plotly">
- 	
-						
-			
-						
-						function Ardagram(index ) { 
-							$( this ).html("");
-							/*$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).removeClass("language-Ardagram");
-							$( this ).processArdagram( this  );*/
-						};
-						 
-						function barPlotly(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).removeClass("language-plotly");
-							$( this ).processPlotly( this  , "bar");
-						};
-
-						function StorageEvolution(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("StorageEvolution").removeClass("language-StorageEvolution");
-							$( this ).processPlotly( this  , "StorageEvolution");
-						};
-						function Multiline(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("Multiline").removeClass("language-Multiline");
-							$( this ).processPlotly( this  , "Multiline");
-						};
-						function barstackedPlotly(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("barstacked").removeClass("language-plotlybarstacked");
-							$( this ).processPlotly( this  , "barstacked");
-						};
-						function Volbarstacked(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("Volbarstacked").removeClass("language-Volbarstacked");
-							$( this ).processPlotly( this  , "Volbarstacked");
-						};
-						function NasVolumeGraf(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("NasVolume").removeClass("language-NasVolume");
-							$( this ).processPlotly( this  , "NasVolume");
-						};
-						function warningPie(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("warningPie").removeClass("language-warningPie");
-							$( this ).processPlotly( this  , "warningPie");
-						};
-						function CommVaultJob(index ) { 
-							$( this ).parent("pre").attr("style", "text-align: center; background: none;");
-							$( this ).addClass("CommVaultJob").removeClass("language-CommVaultJob");
-							$( this ).processPlotly( this  , "CommVaultJob");
-						};
-						   
-		
-
-  $(document).ready(function(){
-    $.fn.myFunction = function(){ 
-       			$(".language-plotly").each(barPlotly);
-						$(".language-Multiline").each(Multiline);
-						$(".language-StorageEvolution").each(StorageEvolution);
-						$(".language-Volbarstacked").each(Volbarstacked);
-						$(".language-plotlybarstacked").each(barstackedPlotly);
-						$(".language-NasVolume").each(NasVolumeGraf);
-						$(".language-warningPie").each(warningPie);
-						$(".language-CommVaultJob").each(CommVaultJob);
-						$(".language-Ardagram").each(Ardagram);
-    } 
-    $().myFunction();
-    });              
-			</script> 
-		';
+    // The graphs of the report are drawn by view.js, loaded on the report pages (my_admin_scripts).
     echo $script; //preg_replace( '/\s+/', ' ', $script );
 }
 
