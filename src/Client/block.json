@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "create-block/multi-block-client",
+  "version": "0.1.0",
+  "title": "Multi Block Client",
+  "category": "widgets",
+  "icon": "smiley",
+  "description": "Example block scaffolded with Create Block tool.",
+  "supports": {
+    "html": false
+  },
+  "render": "file:./render.php",
+  "textdomain": "multi-block-client",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

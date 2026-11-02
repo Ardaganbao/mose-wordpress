@@ -31,6 +31,22 @@ A site with a version from before the updater (1.0.0) must install the zip once 
 
 The [Release workflow](.github/workflows/release.yml) checks that the tag matches the version, builds `multi-block.zip` and publishes the release. A tag with a suffix, like `v1.2.0-rc.1`, is a pre-release: the sites ignore it, so it can be tested by installing its zip by hand.
 
+## Development
+
+The blocks are in `src/<Block>/` (`block.json`, `edit.js`, `save.js`, `render.php`, styles) and compile to `build/`, which is what the sites run. Needs Node.js 22 or later.
+
+```powershell
+npm install
+npm run start   # rebuilds build/ on every change
+npm run build   # production build before a release
+```
+
+Commit `src/` and `build/` together: the release zip contains `build/`, not `src/`.
+
+- The blocks are drawn by `render.php`. Do not change what `save.js` returns: the reports already contain that markup, and the editor would mark those blocks as invalid.
+- `view.js` at the root is loaded on every page; `src/arda_MQ/view.js` is an identical copy, built into the arda_MQ block. Change both.
+- `src/` was rebuilt from the development build, since the original was not kept.
+
 ## Graph blocks
 
 A graph is a ``` block whose name is the graph type, with a Markdown table inside: the first row is the title then the labels, the `|---|` row is skipped, the other rows are the data.

@@ -1,0 +1,16 @@
+{
+	"name": "multi-block",
+	"version": "1.0.0",
+	"description": "WP Arda-Report: the report blocks of MOSE for WordPress",
+	"private": true,
+	"license": "GPL-3.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build --webpack-copy-php",
+		"start": "wp-scripts start --webpack-copy-php",
+		"format": "wp-scripts format src",
+		"lint:js": "wp-scripts lint-js src"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "36.1.0"
+	}
+}
