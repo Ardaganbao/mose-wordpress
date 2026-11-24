@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1.0-rc.5
+ * Version:           1.1.0
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
@@ -432,7 +432,19 @@ function my_admin_scripts()
     }
     wp_enqueue_script('ardareport-chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js', array(), null, true);
     wp_enqueue_script('ardareport-graphs', ARDAREPORT_PLUGIN_URL . 'view.js', array('ardareport-chartjs'), (string) filemtime(__DIR__ . '/view.js'), true);
+    // The action-tracker tables: mose-actions.js draws the mose-actions blocks (Suivi des actions).
+    wp_enqueue_script('ardareport-actions', ARDAREPORT_PLUGIN_URL . 'mose-actions.js', array(), (string) filemtime(__DIR__ . '/mose-actions.js'), true);
 }
+
+// wp-githuber-md's Markdown editor attaches to the Classic editor only. The report post type sets
+// show_in_rest => true (kept for the REST API), which would otherwise open the block editor instead,
+// so force the Classic editor for reports and the Markdown editor appears again.
+add_filter('use_block_editor_for_post_type', function ($use_block_editor, $post_type) {
+    if ($post_type === ARDAREPORT_POST_TYPE) {
+        return false;
+    }
+    return $use_block_editor;
+}, 10, 2);
 
 // The report style (screen and A4 print) and its fonts.
 add_action('wp_enqueue_scripts', function () {
