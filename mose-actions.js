@@ -131,12 +131,12 @@
     });
     html += '</tbody></table>';
 
-    html += '<p style="font-family:\'Fira Sans\',Arial,sans-serif;font-size:0.9em;margin:6px 0 0;"><strong>Synthèse —</strong> Total : ' + rows.length +
-      ' · <span style="color:#d93025;font-weight:bold;">● Red : ' + counts.red + '</span>' +
-      ' · <span style="color:#e8710a;font-weight:bold;">● Orange : ' + counts.orange + '</span>' +
-      ' · <span style="color:#188038;font-weight:bold;">● Green : ' + counts.green + '</span>';
-    if (ownerIdx >= 0) { html += ' · Sans owner : ' + noOwner; }
-    if (dueIdx >= 0) { html += ' · Avec échéance : ' + withDue; }
+    html += '<p style="font-family:\'Fira Sans\',Arial,sans-serif;font-size:0.9em;margin:6px 0 0;"><strong>Summary —</strong> Total: ' + rows.length +
+      ' · <span style="color:#d93025;font-weight:bold;">● Red: ' + counts.red + '</span>' +
+      ' · <span style="color:#e8710a;font-weight:bold;">● Orange: ' + counts.orange + '</span>' +
+      ' · <span style="color:#188038;font-weight:bold;">● Green: ' + counts.green + '</span>';
+    if (ownerIdx >= 0) { html += ' · No owner: ' + noOwner; }
+    if (dueIdx >= 0) { html += ' · With due date: ' + withDue; }
     html += '</p></div>';
     return html;
   }
