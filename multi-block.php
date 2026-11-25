@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1.3
+ * Version:           1.1.4
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
@@ -458,6 +458,19 @@ add_filter('use_block_editor_for_post_type', 'ardareport_force_classic_editor', 
 add_filter('use_block_editor_for_post', 'ardareport_force_classic_editor', 99, 2);
 add_filter('gutenberg_can_edit_post_type', 'ardareport_force_classic_editor', 99, 2);
 add_filter('gutenberg_can_edit_post', 'ardareport_force_classic_editor', 99, 2);
+
+// wp-githuber-md only attaches its Markdown editor to post types listed in its own setting
+// 'enable_markdown_for_post_types' (default: just post + page), via add_post_type_support(..,
+// 'githuber_markdown'). The Report CPT is not in that default list, so the Markdown editor never
+// loads on reports even with the Classic editor forced above. githuber exposes a filter to add post
+// types (the tag is misspelled 'suppot' in its source, Controllers/Markdown.php) — add Report here so
+// it works out of the box, with no need to tick a checkbox in the Githuber MD settings.
+add_filter('githuber_md_suppot_post_types', function ($post_types) {
+    if (is_array($post_types) && !in_array(ARDAREPORT_POST_TYPE, $post_types, true)) {
+        $post_types[] = ARDAREPORT_POST_TYPE;
+    }
+    return $post_types;
+});
 
 // The report style (screen and A4 print) and its fonts.
 add_action('wp_enqueue_scripts', function () {
