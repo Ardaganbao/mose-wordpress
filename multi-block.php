@@ -6,7 +6,7 @@
  * Description: integration of compoment in MQ for your WordPress sites for Reporting.
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Version:           1.1.2
+ * Version:           1.1.3
  * Author:            Damien Grassone
  * Author URI:  https://ardagan.fr
  * License:     GPL 3.0
@@ -438,13 +438,26 @@ function my_admin_scripts()
 
 // wp-githuber-md's Markdown editor attaches to the Classic editor only. The report post type sets
 // show_in_rest => true (kept for the REST API), which would otherwise open the block editor instead,
-// so force the Classic editor for reports and the Markdown editor appears again.
-add_filter('use_block_editor_for_post_type', function ($use_block_editor, $post_type) {
+// so force the Classic editor for reports and the Markdown editor appears again. Hook the type-level
+// and post-level checks AND the standalone Gutenberg plugin's own filters (which ignore the core
+// use_block_editor_for_post_type filter), at a late priority so this wins over anything re-enabling it.
+function ardareport_force_classic_editor($use_block_editor, $post_or_type) {
+    $post_type = '';
+    if (is_string($post_or_type)) {
+        $post_type = $post_or_type;
+    }
+    elseif (is_object($post_or_type) && isset($post_or_type->post_type)) {
+        $post_type = $post_or_type->post_type;
+    }
     if ($post_type === ARDAREPORT_POST_TYPE) {
         return false;
     }
     return $use_block_editor;
-}, 10, 2);
+}
+add_filter('use_block_editor_for_post_type', 'ardareport_force_classic_editor', 99, 2);
+add_filter('use_block_editor_for_post', 'ardareport_force_classic_editor', 99, 2);
+add_filter('gutenberg_can_edit_post_type', 'ardareport_force_classic_editor', 99, 2);
+add_filter('gutenberg_can_edit_post', 'ardareport_force_classic_editor', 99, 2);
 
 // The report style (screen and A4 print) and its fonts.
 add_action('wp_enqueue_scripts', function () {
