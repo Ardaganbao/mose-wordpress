@@ -657,9 +657,9 @@ table {
 thead th,
 thead td,
 table tr:first-child th {
-  background-color: #002b49 !important;
+  background-color: #00BEBE !important;
   color: #ffffff !important;
-  border-color: #002b49 !important;
+  border-color: #00BEBE !important;
   font-weight: bold !important;
   text-align: left !important;
 }
