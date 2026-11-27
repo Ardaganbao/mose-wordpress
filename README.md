@@ -5,6 +5,7 @@ WordPress side of [MOSE](https://github.com/Ardaganbao/Mose): the **WP Arda-Repo
 - **Report** and **Customer** post types, under the **Reports** menu.
 - Report blocks: Title, Client, Introduction (context, author, revisions, customer address), Social, version, arda_MQ.
 - The graphs of the MOSE Markdown reports: `view.js` draws the ``` blocks named `Volbarstacked`, `NasVolume`, `CommVaultJob`, `plotly`, `plotlybarstacked`, `Multiline`, `StorageEvolution` and `warningPie` with Chart.js, from the table inside them.
+- The action tracker: `mose-actions.js` draws the ``` blocks named `mose-actions` as a Red / Orange / Green *Suivi des actions* table with a Synthèse line (no Chart.js).
 
 ## Install
 
@@ -54,6 +55,7 @@ Commit `src/` and `build/` together: the release zip contains `build/`, not `src
 - The blocks are drawn by `render.php`. Do not change what `save.js` returns: the reports already contain that markup, and the editor would mark those blocks as invalid.
 - `view.js` at the root is loaded on every page; `src/arda_MQ/view.js` is an identical copy, built into the arda_MQ block. Change both.
 - `src/` was rebuilt from the development build, since the original was not kept.
+- `mose-actions.js` at the root is a standalone script (not built from `src/`), enqueued by `my_admin_scripts()` right after `view.js` on the Report pages. Edit it directly.
 
 ## Graph blocks
 
@@ -77,6 +79,24 @@ A graph is a ``` block whose name is the graph type, with a Markdown table insid
 | `Multiline`, `StorageEvolution` | Lines, one per row, with the last value written |
 | `warningPie` | Doughnut of OK / warning / critical |
 | `plotly` | Bars, with the values written |
+
+## Action-tracker block
+
+A ``` block named `mose-actions` holds a *Suivi des actions* follow-up table — a Red / Orange / Green list of issues and the actions to close them — not a graph. `mose-actions.js` builds it in the browser, on the Report pages only, with no Chart.js or Mermaid dependency.
+
+````
+```mose-actions
+# Suivi des actions
+Issue | Solution | Owner | Due date | Status | Comments
+Garanties matériel expirées | Vérifier et régulariser |  | 27/06/2026 | Red | extension à enregistrer
+```
+````
+
+- One row per line, columns separated by `|`; the leading/trailing `|` and a `---|---` divider line are optional, so a pasted Markdown table works. A line starting with `#` is the title. The header is optional and defaults to `Issue | Solution | Owner | Due date | Status | Comments`.
+- The **Status** column (header containing `status`/`statut`, else the 5th column) tints the row and shows a coloured pill: 🔴 `red`/`rouge`/`critical`…, 🟠 `orange`/`warning`/`en cours`…, 🟢 `green`/`vert`/`ok`/`done`… (case-insensitive).
+- A **Synthèse** line is added below with the total, the count per colour, how many rows have no owner and how many have a due date.
+
+The PDF converter (`htmltoPDF.ps1` in report-to-PDF) builds the same table server-side, so the two builders must be kept in step: if you change the columns, colours or Synthèse in one, change the other to match. See the [MOSE wiki — Action tracker](https://github.com/Ardaganbao/Mose/wiki/Action-tracker) for how it is written in a report.
 
 ## Known issues
 
